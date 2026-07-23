@@ -12,3 +12,10 @@ spring:
 logging:
   level:
     com.abdullahadil.contactmanagement: INFO
+
+app:
+  jwt:
+    # Must be set via the JWT_SECRET env var - no default, so a
+    # misconfigured prod deployment fails fast instead of running insecure.
+    secret: ${JWT_SECRET}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
