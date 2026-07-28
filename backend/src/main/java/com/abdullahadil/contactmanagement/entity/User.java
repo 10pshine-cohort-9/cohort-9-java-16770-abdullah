@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,14 +18,15 @@ import java.time.Instant;
 
 /**
  * A registered account. Users can self-register with either an email or a
- * phone number (enforced at the service layer, not here, since "at least
- * one of two optional columns" isn't expressible as a single JPA constraint).
+ * phone number. Both fields are optional, so uniqueness on them can't be a
+ * plain JPA unique constraint - on SQL Server that only allows a single NULL
+ * per column, which would wrongly reject the second phone-only registration.
+ * Uniqueness is enforced in AuthService instead; a proper filtered unique
+ * index (WHERE email IS NOT NULL / WHERE phone_number IS NOT NULL) belongs
+ * in a schema migration once we're running against real SQL Server.
  */
 @Entity
-@Table(name = "users", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_users_email", columnNames = "email"),
-        @UniqueConstraint(name = "uk_users_phone_number", columnNames = "phone_number")
-})
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor

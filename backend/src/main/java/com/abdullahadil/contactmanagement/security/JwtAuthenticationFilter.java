@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +24,7 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
@@ -46,14 +49,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = header.substring(BEARER_PREFIX.length());
         if (jwtService.isValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
+            authenticate(token, request);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    // A token can be validly signed and unexpired but still fail here - e.g.
+    // it points to a user that's since been deleted. Treat that as "not
+    // authenticated" rather than letting the exception surface as a 500.
+    private void authenticate(String token, HttpServletRequest request) {
+        try {
             Long userId = jwtService.extractUserId(token);
             UserDetails principal = userDetailsService.loadUserByUsername(String.valueOf(userId));
 
             var authentication = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (Exception ex) {
+            log.debug("Rejecting token that failed to resolve to a user: {}", ex.getMessage());
         }
-
-        filterChain.doFilter(request, response);
     }
 }

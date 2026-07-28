@@ -1,8 +1,13 @@
 spring:
   application:
     name: contact-management-system
-  profiles:
-    active: dev
+  jpa:
+    properties:
+      hibernate:
+        # Batches the lazy-loaded emails/phones for a page of contacts into
+        # a handful of "WHERE id IN (...)" queries instead of one query per
+        # contact (avoids N+1 selects in ContactService.list/search).
+        default_batch_fetch_size: 32
 
 server:
   port: 8080
