@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    # trustServerCertificate defaults to true because the local Docker SQL
+    # Server image uses a self-signed cert; override to false and supply a
+    # real CA-signed cert for an actual internet-facing deployment.
+    url: jdbc:sqlserver://${DB_HOST:localhost}:${DB_PORT:1433};databaseName=${DB_NAME:contactsdb};encrypt=${DB_ENCRYPT:true};trustServerCertificate=${DB_TRUST_SERVER_CERTIFICATE:true}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    # No defaults - must be set via env vars so we're never shipping a
+    # usable password in source control.
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    com.abdullahadil.contactmanagement: INFO
+
+app:
+  jwt:
+    # Must be set via the JWT_SECRET env var - no default, so a
+    # misconfigured prod deployment fails fast instead of running insecure.
+    secret: ${JWT_SECRET}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
