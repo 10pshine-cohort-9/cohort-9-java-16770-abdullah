@@ -1,11 +1,13 @@
 package com.abdullahadil.contactmanagement.service;
 
 import com.abdullahadil.contactmanagement.dto.AuthResponse;
+import com.abdullahadil.contactmanagement.dto.ChangePasswordRequest;
 import com.abdullahadil.contactmanagement.dto.LoginRequest;
 import com.abdullahadil.contactmanagement.dto.RegisterRequest;
 import com.abdullahadil.contactmanagement.entity.User;
 import com.abdullahadil.contactmanagement.exception.DuplicateResourceException;
 import com.abdullahadil.contactmanagement.exception.InvalidCredentialsException;
+import com.abdullahadil.contactmanagement.exception.ResourceNotFoundException;
 import com.abdullahadil.contactmanagement.repository.UserRepository;
 import com.abdullahadil.contactmanagement.security.JwtService;
 import org.slf4j.Logger;
@@ -61,6 +63,19 @@ public class AuthService {
 
         log.info("User id={} logged in", user.getId());
         return new AuthResponse(jwtService.generateToken(user.getId()), user.getId());
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new InvalidCredentialsException("Current password is incorrect");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        log.info("User id={} changed their password", userId);
     }
 
     private Optional<User> findByIdentifier(String identifier) {
