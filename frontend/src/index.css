@@ -124,3 +124,37 @@ button.secondary {
 a {
   color: var(--accent);
 }
+
+.contacts-table {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-collapse: collapse;
+  overflow: hidden;
+}
+
+.contacts-table th,
+.contacts-table td {
+  text-align: left;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.contacts-table th {
+  background: #fafbfc;
+  font-weight: 600;
+}
+
+.contacts-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}

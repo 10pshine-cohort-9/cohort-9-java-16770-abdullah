@@ -1,9 +1,51 @@
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchContacts } from '../api/contacts'
 import { useAuth } from '../context/auth-context'
 
+const PAGE_SIZE = 10
+
 export default function ContactsPage() {
+  const [contacts, setContacts] = useState([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
   const { signOut } = useAuth()
   const navigate = useNavigate()
+
+  // Wait for a pause in typing before hitting the API, otherwise every
+  // keystroke fires a request.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim())
+      setPage(0)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  const loadContacts = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await fetchContacts({ page, size: PAGE_SIZE, search })
+      setContacts(data.content)
+      setTotalPages(data.totalPages)
+      setTotalElements(data.totalElements)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [page, search])
+
+  useEffect(() => {
+    loadContacts()
+  }, [loadContacts])
 
   function handleSignOut() {
     signOut()
@@ -19,7 +61,67 @@ export default function ContactsPage() {
         </button>
       </header>
 
-      <p className="muted">The contacts list is next.</p>
+      <input
+        type="search"
+        placeholder="Search by first or last name"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+      />
+
+      {error && <p className="error">{error}</p>}
+
+      {loading ? (
+        <p className="muted">Loading contacts...</p>
+      ) : contacts.length === 0 ? (
+        <p className="muted">{search ? `No contacts match "${search}".` : 'No contacts yet.'}</p>
+      ) : (
+        <>
+          <table className="contacts-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Email</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((contact) => (
+                <tr key={contact.id}>
+                  <td>
+                    {contact.firstName} {contact.lastName}
+                  </td>
+                  <td>{contact.title || '-'}</td>
+                  <td>{contact.emails[0]?.email || '-'}</td>
+                  <td>{contact.phones[0]?.phoneNumber || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="pagination">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setPage((current) => current - 1)}
+              disabled={page === 0}
+            >
+              Previous
+            </button>
+            <span className="muted">
+              Page {page + 1} of {totalPages} ({totalElements} total)
+            </span>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setPage((current) => current + 1)}
+              disabled={page >= totalPages - 1}
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
