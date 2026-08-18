@@ -1,25 +1,23 @@
 import { useCallback, useMemo, useState } from 'react'
-import { TOKEN_KEY } from '../api/client'
+import { clearStored, readStored, TOKEN_KEY, USER_ID_KEY, writeStored } from '../lib/storage'
 import { AuthContext } from './auth-context'
 
-const USER_ID_KEY = 'cms.userId'
-
 export function AuthProvider({ children }) {
-  // Read straight from localStorage on first render so a page refresh
+  // Read straight from storage on first render so a page refresh
   // doesn't log the user back out.
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY))
-  const [userId, setUserId] = useState(() => localStorage.getItem(USER_ID_KEY))
+  const [token, setToken] = useState(() => readStored(TOKEN_KEY))
+  const [userId, setUserId] = useState(() => readStored(USER_ID_KEY))
 
   const signIn = useCallback((auth) => {
-    localStorage.setItem(TOKEN_KEY, auth.token)
-    localStorage.setItem(USER_ID_KEY, auth.userId)
+    writeStored(TOKEN_KEY, auth.token)
+    writeStored(USER_ID_KEY, String(auth.userId))
     setToken(auth.token)
     setUserId(String(auth.userId))
   }, [])
 
   const signOut = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_ID_KEY)
+    clearStored(TOKEN_KEY)
+    clearStored(USER_ID_KEY)
     setToken(null)
     setUserId(null)
   }, [])

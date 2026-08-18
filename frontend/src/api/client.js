@@ -1,6 +1,5 @@
 import axios from 'axios'
-
-export const TOKEN_KEY = 'cms.token'
+import { readStored, TOKEN_KEY } from '../lib/storage'
 
 const client = axios.create({
   baseURL: '/api',
@@ -9,7 +8,7 @@ const client = axios.create({
 
 // Attach the JWT to every request if we have one stored.
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY)
+  const token = readStored(TOKEN_KEY)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

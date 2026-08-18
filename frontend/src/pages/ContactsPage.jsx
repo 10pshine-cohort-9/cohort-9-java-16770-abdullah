@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchContacts } from '../api/contacts'
 import { useAuth } from '../context/auth-context'
@@ -28,24 +28,34 @@ export default function ContactsPage() {
     return () => clearTimeout(timer)
   }, [searchInput])
 
-  const loadContacts = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await fetchContacts({ page, size: PAGE_SIZE, search })
-      setContacts(data.content)
-      setTotalPages(data.totalPages)
-      setTotalElements(data.totalElements)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    // Typing in the search box or paging quickly leaves more than one
+    // request in flight, and they don't necessarily come back in order.
+    // Ignore anything that resolves after we've already moved on.
+    let ignore = false
+
+    async function loadContacts() {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await fetchContacts({ page, size: PAGE_SIZE, search })
+        if (ignore) return
+        setContacts(data.content)
+        setTotalPages(data.totalPages)
+        setTotalElements(data.totalElements)
+      } catch (err) {
+        if (ignore) return
+        setError(err.message)
+      } finally {
+        if (!ignore) setLoading(false)
+      }
+    }
+
+    loadContacts()
+    return () => {
+      ignore = true
     }
   }, [page, search])
-
-  useEffect(() => {
-    loadContacts()
-  }, [loadContacts])
 
   function handleSignOut() {
     signOut()
