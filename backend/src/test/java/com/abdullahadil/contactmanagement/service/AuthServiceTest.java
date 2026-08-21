@@ -1,11 +1,13 @@
 package com.abdullahadil.contactmanagement.service;
 
 import com.abdullahadil.contactmanagement.dto.AuthResponse;
+import com.abdullahadil.contactmanagement.dto.ChangePasswordRequest;
 import com.abdullahadil.contactmanagement.dto.LoginRequest;
 import com.abdullahadil.contactmanagement.dto.RegisterRequest;
 import com.abdullahadil.contactmanagement.entity.User;
 import com.abdullahadil.contactmanagement.exception.DuplicateResourceException;
 import com.abdullahadil.contactmanagement.exception.InvalidCredentialsException;
+import com.abdullahadil.contactmanagement.exception.ResourceNotFoundException;
 import com.abdullahadil.contactmanagement.repository.UserRepository;
 import com.abdullahadil.contactmanagement.security.JwtService;
 import org.junit.jupiter.api.Test;
@@ -107,5 +109,67 @@ class AuthServiceTest {
                 .isInstanceOf(InvalidCredentialsException.class);
 
         verify(jwtService, never()).generateToken(anyLong());
+    }
+
+    @Test
+    void getProfileReturnsUserDetails() {
+        User user = User.builder()
+                .id(1L)
+                .email("user@example.com")
+                .phoneNumber("03001234567")
+                .passwordHash("hashed")
+                .build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        var profile = authService.getProfile(1L);
+
+        assertThat(profile.id()).isEqualTo(1L);
+        assertThat(profile.email()).isEqualTo("user@example.com");
+        assertThat(profile.phoneNumber()).isEqualTo("03001234567");
+    }
+
+    @Test
+    void getProfileRejectsUnknownUser() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.getProfile(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void changePasswordUpdatesHashWhenCurrentPasswordCorrect() {
+        User user = User.builder().id(1L).email("user@example.com").passwordHash("old-hash").build();
+        ChangePasswordRequest request = new ChangePasswordRequest("current-password", "new-password");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("current-password", "old-hash")).thenReturn(true);
+        when(passwordEncoder.encode("new-password")).thenReturn("new-hash");
+
+        authService.changePassword(1L, request);
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+    }
+
+    @Test
+    void changePasswordRejectsWrongCurrentPassword() {
+        User user = User.builder().id(1L).email("user@example.com").passwordHash("old-hash").build();
+        ChangePasswordRequest request = new ChangePasswordRequest("wrong-current", "new-password");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-current", "old-hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.changePassword(1L, request))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        assertThat(user.getPasswordHash()).isEqualTo("old-hash");
+    }
+
+    @Test
+    void changePasswordRejectsUnknownUser() {
+        ChangePasswordRequest request = new ChangePasswordRequest("current-password", "new-password");
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.changePassword(99L, request))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
