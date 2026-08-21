@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchContacts } from '../api/contacts'
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
+import ContactFormModal from '../components/ContactFormModal'
 import { useAuth } from '../context/auth-context'
 
 const PAGE_SIZE = 10
@@ -14,6 +16,12 @@ export default function ContactsPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  // Bumped after a create/update/delete so the list reloads.
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [formContact, setFormContact] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [contactToDelete, setContactToDelete] = useState(null)
 
   const { signOut } = useAuth()
   const navigate = useNavigate()
@@ -55,11 +63,38 @@ export default function ContactsPage() {
     return () => {
       ignore = true
     }
-  }, [page, search])
+  }, [page, search, refreshKey])
 
   function handleSignOut() {
     signOut()
     navigate('/login')
+  }
+
+  function openCreate() {
+    setFormContact(null)
+    setShowForm(true)
+  }
+
+  function openEdit(contact) {
+    setFormContact(contact)
+    setShowForm(true)
+  }
+
+  function handleSaved() {
+    setShowForm(false)
+    setFormContact(null)
+    setRefreshKey((key) => key + 1)
+  }
+
+  function handleDeleted() {
+    setContactToDelete(null)
+    // Deleting the only row on the last page would leave us past the end,
+    // so step back a page when that happens.
+    if (contacts.length === 1 && page > 0) {
+      setPage((current) => current - 1)
+    } else {
+      setRefreshKey((key) => key + 1)
+    }
   }
 
   return (
@@ -71,12 +106,17 @@ export default function ContactsPage() {
         </button>
       </header>
 
-      <input
-        type="search"
-        placeholder="Search by first or last name"
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-      />
+      <div className="toolbar">
+        <input
+          type="search"
+          placeholder="Search by first or last name"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+        <button type="button" onClick={openCreate}>
+          New contact
+        </button>
+      </div>
 
       {error && <p className="error">{error}</p>}
 
@@ -93,6 +133,7 @@ export default function ContactsPage() {
                 <th>Title</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -104,6 +145,18 @@ export default function ContactsPage() {
                   <td>{contact.title || '-'}</td>
                   <td>{contact.emails[0]?.email || '-'}</td>
                   <td>{contact.phones[0]?.phoneNumber || '-'}</td>
+                  <td className="row-actions">
+                    <button type="button" className="secondary" onClick={() => openEdit(contact)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => setContactToDelete(contact)}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -131,6 +184,22 @@ export default function ContactsPage() {
             </button>
           </div>
         </>
+      )}
+
+      {showForm && (
+        <ContactFormModal
+          contact={formContact}
+          onClose={() => setShowForm(false)}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {contactToDelete && (
+        <ConfirmDeleteModal
+          contact={contactToDelete}
+          onClose={() => setContactToDelete(null)}
+          onDeleted={handleDeleted}
+        />
       )}
     </div>
   )
