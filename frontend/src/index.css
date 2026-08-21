@@ -159,6 +159,47 @@ a {
   margin-top: 1rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notice {
+  color: #1d6b3f;
+  background: #e8f6ed;
+  border: 1px solid #b9e0c8;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.875rem;
+  margin: 0 0 1rem;
+}
+
+.details {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 460px;
+}
+
+.details dl {
+  margin: 0 0 1.25rem;
+}
+
+.details dt {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.details dd {
+  margin: 0.15rem 0 0.9rem;
+  font-size: 0.95rem;
+}
+
 .toolbar {
   display: flex;
   gap: 0.75rem;

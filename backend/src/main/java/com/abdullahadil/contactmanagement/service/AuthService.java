@@ -4,6 +4,7 @@ import com.abdullahadil.contactmanagement.dto.AuthResponse;
 import com.abdullahadil.contactmanagement.dto.ChangePasswordRequest;
 import com.abdullahadil.contactmanagement.dto.LoginRequest;
 import com.abdullahadil.contactmanagement.dto.RegisterRequest;
+import com.abdullahadil.contactmanagement.dto.UserResponse;
 import com.abdullahadil.contactmanagement.entity.User;
 import com.abdullahadil.contactmanagement.exception.DuplicateResourceException;
 import com.abdullahadil.contactmanagement.exception.InvalidCredentialsException;
@@ -63,6 +64,13 @@ public class AuthService {
 
         log.info("User id={} logged in", user.getId());
         return new AuthResponse(jwtService.generateToken(user.getId()), user.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return new UserResponse(user.getId(), user.getEmail(), user.getPhoneNumber(), user.getCreatedAt());
     }
 
     @Transactional

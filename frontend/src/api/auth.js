@@ -14,6 +14,10 @@ export function login({ identifier, password }) {
   return client.post('/auth/login', { identifier, password }).then((res) => res.data)
 }
 
+export function fetchProfile() {
+  return client.get('/users/me').then((res) => res.data)
+}
+
 export function changePassword({ currentPassword, newPassword }) {
   return client.put('/users/me/password', { currentPassword, newPassword })
 }

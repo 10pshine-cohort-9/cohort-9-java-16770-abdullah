@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { fetchContacts } from '../api/contacts'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 import ContactFormModal from '../components/ContactFormModal'
@@ -101,9 +101,12 @@ export default function ContactsPage() {
     <div className="page">
       <header className="page-header">
         <h1>Contacts</h1>
-        <button type="button" className="secondary" onClick={handleSignOut}>
-          Sign out
-        </button>
+        <div className="header-actions">
+          <Link to="/profile">Profile</Link>
+          <button type="button" className="secondary" onClick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
       </header>
 
       <div className="toolbar">

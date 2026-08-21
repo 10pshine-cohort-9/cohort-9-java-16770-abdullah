@@ -112,6 +112,31 @@ class AuthServiceTest {
     }
 
     @Test
+    void getProfileReturnsUserDetails() {
+        User user = User.builder()
+                .id(1L)
+                .email("user@example.com")
+                .phoneNumber("03001234567")
+                .passwordHash("hashed")
+                .build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        var profile = authService.getProfile(1L);
+
+        assertThat(profile.id()).isEqualTo(1L);
+        assertThat(profile.email()).isEqualTo("user@example.com");
+        assertThat(profile.phoneNumber()).isEqualTo("03001234567");
+    }
+
+    @Test
+    void getProfileRejectsUnknownUser() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.getProfile(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void changePasswordUpdatesHashWhenCurrentPasswordCorrect() {
         User user = User.builder().id(1L).email("user@example.com").passwordHash("old-hash").build();
         ChangePasswordRequest request = new ChangePasswordRequest("current-password", "new-password");
