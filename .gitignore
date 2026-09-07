@@ -1,3 +1,6 @@
 /.claude/
 /.idea/
 /.vscode/
+
+# Local credentials for docker compose and the prod profile.
+.env

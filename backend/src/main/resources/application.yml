@@ -8,6 +8,11 @@ spring:
         # a handful of "WHERE id IN (...)" queries instead of one query per
         # contact (avoids N+1 selects in ContactService.list/search).
         default_batch_fetch_size: 32
+  flyway:
+    # The migrations are written in SQL Server syntax, so only the prod
+    # profile runs them. Dev and the tests build an H2 schema from the
+    # entities instead.
+    enabled: false
 
 server:
   port: 8080

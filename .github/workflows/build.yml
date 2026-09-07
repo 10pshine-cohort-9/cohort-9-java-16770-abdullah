@@ -1,0 +1,75 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Nothing here writes back to the repository, so read-only is enough.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend build and analysis
+    runs-on: ubuntu-latest
+    env:
+      # Only whether the token exists, so the check below can run without
+      # putting the token itself in reach of the build.
+      SONAR_TOKEN_SET: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Sonar works out blame information from the history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test
+        working-directory: backend
+        run: ./mvnw --batch-mode verify
+
+      - name: SonarCloud analysis
+        # Push only: a pull request can change the build, so the token is
+        # never exposed to code that arrived in a PR. Skipped entirely until
+        # the SONAR_TOKEN secret is configured.
+        if: github.event_name == 'push' && env.SONAR_TOKEN_SET == 'true'
+        working-directory: backend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Project and organization keys live in the pom.
+        run: ./mvnw --batch-mode sonar:sonar
+
+  frontend:
+    name: Frontend build and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
